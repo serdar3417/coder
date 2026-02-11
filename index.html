@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kodlama Dünyası - Öğren & Uygula</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Highlight.js for code styling -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="theme-default">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="container d-flex flex-column justify-content-center align-items-center vh-100">
+        <div class="card p-5 shadow-lg text-center" style="max-width: 500px; width: 100%;">
+            <h1 class="mb-4 text-primary"><i class="fas fa-code"></i> Kodlama Dünyası</h1>
+            <p class="lead mb-4">Kodlama serüvenine başlamak için profilini oluştur!</p>
+
+            <div class="mb-3 text-start">
+                <label for="username" class="form-label">Adın Nedir?</label>
+                <input type="text" class="form-control form-control-lg" id="username" placeholder="Örn: KodAvcısı Ali">
+            </div>
+
+            <div class="mb-4 text-start">
+                <label class="form-label">Avatarını Seç:</label>
+                <div class="d-flex justify-content-between flex-wrap gap-2" id="avatar-selection">
+                    <button class="btn btn-outline-secondary avatar-btn active" data-avatar="👨‍💻">👨‍💻</button>
+                    <button class="btn btn-outline-secondary avatar-btn" data-avatar="👩‍💻">👩‍💻</button>
+                    <button class="btn btn-outline-secondary avatar-btn" data-avatar="🦸‍♂️">🦸‍♂️</button>
+                    <button class="btn btn-outline-secondary avatar-btn" data-avatar="🦸‍♀️">🦸‍♀️</button>
+                    <button class="btn btn-outline-secondary avatar-btn" data-avatar="🤖">🤖</button>
+                    <button class="btn btn-outline-secondary avatar-btn" data-avatar="🦊">🦊</button>
+
+                    <!-- Custom Upload -->
+                    <button class="btn btn-outline-primary avatar-btn" id="upload-avatar-btn" title="Fotoğraf Yükle"><i
+                            class="fas fa-camera"></i></button>
+                    <input type="file" id="custom-avatar-input" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <button id="start-btn" class="btn btn-primary btn-lg w-100">Serüvene Başla! 🚀</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE (Hidden by default) -->
+    <div id="app-interface" class="d-none vh-100 d-flex flex-column">
+
+        <!-- NAVBAR -->
+        <nav class="navbar navbar-expand-lg border-bottom px-3 py-2 bg-body-tertiary">
+            <div class="container-fluid">
+                <a class="navbar-brand text-primary fw-bold" href="#" onclick="location.reload()"><i
+                        class="fas fa-code"></i> Kodlama Dünyası</a>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button class="btn btn-outline-secondary" onclick="changeFontSize(-1)"><i
+                                class="fas fa-minus"></i></button>
+                        <button class="btn btn-outline-secondary" onclick="changeFontSize(1)"><i
+                                class="fas fa-plus"></i></button>
+                    </div>
+
+                    <!-- Pomodoro Timer -->
+                    <div class="d-flex align-items-center me-2 bg-white rounded px-2 py-1 border"
+                        id="pomodoro-container" style="cursor: pointer;" onclick="togglePomodoro()"
+                        title="Pomodoro Zamanlayıcı">
+                        <i class="fas fa-stopwatch me-1 text-danger"></i>
+                        <span id="pomodoro-display" class="fw-bold text-dark small">25:00</span>
+                    </div>
+
+                    <!-- Focus Radio Widget -->
+                    <div class="d-flex align-items-center me-2 bg-dark text-white rounded px-2 py-1 border border-secondary"
+                        id="radio-widget" style="cursor: pointer;" onclick="toggleRadio()" title="Odaklanma Radyosu">
+                        <i class="fas fa-music me-1 text-info" id="radio-icon"></i>
+                        <span id="radio-status" class="small font-monospace">OFF</span>
+                        <audio id="focus-audio" loop>
+                            <source src="https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3"
+                                type="audio/mpeg">
+                        </audio>
+                    </div>
+
+                    <!-- Ecosystem Tools -->
+                    <div class="btn-group me-2">
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#playgroundModal" title="Kodlama Bahçesi"><i
+                                class="fas fa-code-branch"></i></button>
+                        <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#glossaryModal" title="Sözlük"><i class="fas fa-book"></i></button>
+                        <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#gameModal" title="Hacker Typer"><i class="fas fa-gamepad"></i></button>
+                    </div>
+
+                    <!-- Theme Selector Removed (Moved to Settings) -->
+                    <div class="d-flex align-items-center me-3" title="Günlük Seri">
+                        <span class="fs-5 me-1">🔥</span>
+                        <span id="streak-count" class="fw-bold text-danger">0</span>
+                    </div>
+
+                    <div class="vr"></div>
+
+                    <!-- User Profile Info -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="user-avatar" class="fs-4" style="cursor: pointer;"
+                            onclick="openEditProfile()">👨‍💻</span>
+                        <div>
+                            <div id="user-name" class="fw-bold small" style="cursor: pointer;"
+                                onclick="openEditProfile()">Kullanıcı</div>
+                            <div class="badge bg-warning text-dark"><i class="fas fa-star"></i> <span
+                                    id="user-points">0</span> Puan</div>
+                        </div>
+                        <button class="btn btn-sm btn-light ms-1" onclick="openEditProfile()" title="Profili Düzenle"><i
+                                class="fas fa-pen"></i></button>
+                        <button id="leaderboard-btn" class="btn btn-sm btn-warning ms-2 shadow-sm"
+                            title="Liderlik Tablosu" data-bs-toggle="modal" data-bs-target="#leaderboardModal"><i
+                                class="fas fa-trophy"></i></button>
+                        <button id="market-btn" class="btn btn-sm btn-info ms-2 shadow-sm text-white" title="Mağaza"
+                            onclick="openMarket()"><i class="fas fa-store"></i></button>
+                        <button id="challenge-btn" class="btn btn-sm btn-danger ms-2 shadow-sm" title="Meydan Okuma"
+                            onclick="openDailyChallenge()"><i class="fas fa-fire"></i></button>
+                        <button id="race-btn" class="btn btn-sm btn-dark ms-2 shadow-sm" title="Yarış Arenası"
+                            onclick="openRaceModal()"><i class="fas fa-flag-checkered"></i></button>
+                        <button id="settings-btn" class="btn btn-sm btn-outline-secondary ms-2" title="Ayarlar"
+                            data-bs-toggle="modal" data-bs-target="#settingsModal"><i class="fas fa-cog"></i></button>
+                        <button id="logout-btn" class="btn btn-sm btn-outline-danger ms-2" title="Çıkış Yap"><i
+                                class="fas fa-sign-out-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="flex-grow-1 d-flex overflow-hidden">
+            <!-- SIDEBAR -->
+            <div id="sidebar" class="bg-body-tertiary border-end overflow-auto p-3"
+                style="width: 280px; min-width: 280px;">
+                <h6 class="text-uppercase text-muted small fw-bold mb-3">Ders Programı</h6>
+                <div class="accordion" id="curriculumAccordion">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT AREA -->
+            <div id="main-content" class="flex-grow-1 p-4 overflow-auto position-relative bg-body">
+
+                <!-- DASHBOARD HOME (New) -->
+                <div id="dashboard-home" class="container-fluid">
+                    <div class="row mb-4">
+                        <div class="col-12 text-center">
+                            <h2 class="fw-bold">Hoş Geldin, <span id="dash-user-name">Öğrenci</span>! 👋</h2>
+                            <p class="text-muted">Bugün hangi dilde ustalaşmak istersin?</p>
+                        </div>
+                    </div>
+
+                    <!-- Daily Quests & Achievements Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-bold"><i class="fas fa-tasks text-primary me-2"></i>
+                                    Günlük Görevler</div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush" id="daily-quests-list">
+                                        <!-- Dynamic Quests -->
+                                        <li class="list-group-item">Yükleniyor...</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white fw-bold"><i class="fas fa-medal text-warning me-2"></i>
+                                    Rozetlerim</div>
+                                <div class="card-body text-center">
+                                    <div class="d-flex flex-wrap justify-content-center gap-2" id="badges-container">
+                                        <!-- Dynamic Badges -->
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary mt-3 w-100"
+                                        onclick="checkCertificateEligibility()">🎓 Sertifika Sorgula</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 justify-content-center">
+                        <!-- HTML Card -->
+                        <!-- 5. SINIF Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-light mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px; background-color: #f3e5f5 !important;">
+                                        <i class="fas fa-graduation-cap fa-3x" style="color: #6f42c1;"></i>
+                                    </div>
+                                    <h4 class="fw-bold">5. Sınıf Bilişim</h4>
+                                    <p class="text-muted small">Bilişim Teknolojileri ve Yazılım</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-five" class="progress-bar"
+                                            style="width: 0%; background-color: #6f42c1;"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-five">0</span>/17 Hafta Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-dark w-100 mb-2" onclick="openSubject('five')">Devam
+                                        Et</button>
+                                    <button class="btn btn-dark text-white w-100 fw-bold" onclick="openExam('five')"><i
+                                            class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- 6. SINIF Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-light mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px; background-color: #e3f2fd !important;">
+                                        <i class="fas fa-laptop-code fa-3x text-primary"></i>
+                                    </div>
+                                    <h4 class="fw-bold">6. Sınıf Bilişim</h4>
+                                    <p class="text-muted small">6.Sınıf 2.Dönem Ders Notları</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-six" class="progress-bar bg-primary" style="width: 0%;"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-six">0</span>/14 Hafta Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-primary w-100 mb-2"
+                                        onclick="openSubject('six')">Devam Et</button>
+                                    <button class="btn btn-primary text-white w-100 fw-bold"
+                                        onclick="openExam('six')"><i class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HTML Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-danger bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-html5 fa-3x text-danger"></i>
+                                    </div>
+                                    <h4 class="fw-bold">HTML</h4>
+                                    <p class="text-muted small">Web'in İskeleti</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-html" class="progress-bar bg-danger" style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-html">0</span>/50 Adım Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-danger w-100 mb-2"
+                                        onclick="openSubject('html')">Devam Et</button>
+                                    <button class="btn btn-danger text-white w-100 fw-bold"
+                                        onclick="openExam('html')"><i class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- JS Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-warning bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-js fa-3x text-warning"></i>
+                                    </div>
+                                    <h4 class="fw-bold">JavaScript</h4>
+                                    <p class="text-muted small">Web'in Beyni</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-javascript" class="progress-bar bg-warning text-dark"
+                                            style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-javascript">0</span>/50 Adım
+                                        Tamamlandı</p>
+                                    <button class="btn btn-outline-warning text-dark w-100 mb-2"
+                                        onclick="openSubject('javascript')">Devam Et</button>
+                                    <button class="btn btn-warning text-dark w-100 fw-bold"
+                                        onclick="openExam('javascript')"><i class="fas fa-trophy"></i> Final
+                                        Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CSS Card (Formerly Python) -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-css3-alt fa-3x text-primary"></i>
+                                    </div>
+                                    <h4 class="fw-bold">CSS</h4>
+                                    <p class="text-muted small">Görsel Tasarım</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-css" class="progress-bar bg-primary" style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-css">0</span>/50 Adım Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-primary w-100 mb-2"
+                                        onclick="openSubject('css')">Devam Et</button>
+                                    <button class="btn btn-primary text-white w-100 fw-bold"
+                                        onclick="openExam('css')"><i class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Python Card (New) -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-info bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-python fa-3x text-info"></i>
+                                    </div>
+                                    <h4 class="fw-bold">Python</h4>
+                                    <p class="text-muted small">Yapay Zeka & Veri</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-python" class="progress-bar bg-info" style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-python">0</span>/50 Adım Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-info w-100 mb-2"
+                                        onclick="openSubject('python')">Devam Et</button>
+                                    <button class="btn btn-info text-white w-100 fw-bold"
+                                        onclick="openExam('python')"><i class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- React Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-react fa-3x text-primary"></i>
+                                    </div>
+                                    <h4 class="fw-bold">React</h4>
+                                    <p class="text-muted small">Modern Web UI</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-react" class="progress-bar bg-primary" style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-react">0</span>/50 Adım Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-primary w-100 mb-2"
+                                        onclick="openSubject('react')">Devam Et</button>
+                                    <button class="btn btn-primary text-white w-100 fw-bold"
+                                        onclick="openExam('react')"><i class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Git Card -->
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100 hover-card">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-danger bg-opacity-10 mx-auto d-flex align-items-center justify-content-center mb-3"
+                                        style="width: 80px; height: 80px;">
+                                        <i class="fab fa-git-alt fa-3x text-danger"></i>
+                                    </div>
+                                    <h4 class="fw-bold">Git & GitHub</h4>
+                                    <p class="text-muted small">Versiyon Kontrol</p>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div id="prog-git" class="progress-bar bg-danger" style="width: 0%"></div>
+                                    </div>
+                                    <p class="small text-muted mb-3"><span id="text-git">0</span>/50 Adım Tamamlandı
+                                    </p>
+                                    <button class="btn btn-outline-danger w-100 mb-2" onclick="openSubject('git')">Devam
+                                        Et</button>
+                                    <button class="btn btn-danger text-white w-100 fw-bold" onclick="openExam('git')"><i
+                                            class="fas fa-trophy"></i> Final Sınavı</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lesson Content (Hidden initially) -->
+                <div id="lesson-container" class="d-none mt-4">
+                    <div class="row h-100">
+                        <!-- Left Panel: Theory -->
+                        <div class="col-md-5 d-flex flex-column h-100">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-info" id="lesson-badge">KONU ANLATIMI</span>
+                                        <button class="btn btn-sm btn-outline-dark" onclick="speakTheory()"
+                                            title="Sesli Dinle"><i class="fas fa-volume-up"></i></button>
+                                    </div>
+                                    <h3 id="lesson-title" class="card-title">Ders Başlığı</h3>
+                                    <div id="lesson-theory" class="card-text mt-3">
+                                        <!-- Theory content goes here -->
+                                    </div>
+
+                                    <div class="alert alert-warning mt-3 d-flex align-items-start gap-2">
+                                        <i class="fas fa-lightbulb mt-1"></i>
+                                        <div>
+                                            <strong>Hap Bilgi:</strong>
+                                            <span id="lesson-tip">Burada kısa ve önemli bir ipucu yer alacak.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Practice/Code -->
+                        <div class="col-md-7 d-flex flex-column h-100">
+                            <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+                                <div
+                                    class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-terminal me-2"></i>Kod Uygulama Alanı</span>
+                                    <span class="badg bg-secondary" id="practice-type-badge">Kod Düzeltme</span>
+                                </div>
+                                <div class="card-body p-0 d-flex flex-column flex-grow-1 bg-light">
+                                    <div class="p-2 border-bottom text-muted small bg-white">
+                                        <i class="fas fa-info-circle"></i> <span id="practice-instruction">Aşağıdaki
+                                            hatalı kodu düzeltin.</span>
+                                    </div>
+
+                                    <div class="d-flex flex-grow-1 position-relative">
+                                        <textarea id="code-editor"
+                                            class="form-control font-monospace border-0 h-100 p-3"
+                                            style="resize: none; background: #282c34; color: #abb2bf; font-size: 14px; line-height: 1.5;"
+                                            spellcheck="false"></textarea>
+                                    </div>
+                                </div>
+                                <div
+                                    class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex justify-content-between align-items-center w-100">
+                                        <div id="feedback-area" class="text-muted small me-2" style="max-width: 50%;">
+                                            Sonuç bekleniyor...</div>
+                                        <div class="d-flex gap-2">
+                                            <button id="hint-btn" class="btn btn-warning btn-sm text-dark fw-bold"><i
+                                                    class="far fa-lightbulb"></i> İpucu Al</button>
+                                            <button id="check-btn" class="btn btn-success"><i class="fas fa-play"></i>
+                                                Çalıştır</button>
+                                        </div>
+                                    </div>
+                                    <!-- Solution Reveal Area -->
+                                    <div id="solution-area" class="d-none mt-3 w-100 p-3 bg-light border rounded">
+                                        <h6 class="text-danger fw-bold"><i class="fas fa-key"></i> Çözüm Kartı</h6>
+                                        <p class="small text-muted mb-2" id="solution-text">Çözüm açıklandı:</p>
+                                        <pre><code class="language-html" id="solution-code"></code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-cog"></i> Ayarlar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Lock Toggle -->
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" id="lock-toggle" checked>
+                        <label class="form-check-label fw-bold" for="lock-toggle">Dersleri Sırayla Kilitle</label>
+                        <p class="text-muted small mb-0">
+                            Açıksa, önceki dersi bitirmeden sonraki derse geçemezsiniz.
+                        </p>
+                    </div>
+
+                    <hr>
+
+                    <!-- Theme Selection -->
+                    <h6 class="fw-bold mb-3">Tema Seçimi</h6>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center" id="theme-grid">
+                        <i class="fas fa-circle fa-2x theme-icon"
+                            style="color: #f8f9fa; border: 2px solid #ddd; border-radius: 50%; cursor: pointer;"
+                            onclick="selectTheme('theme-default')" title="Varsayılan"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #212529; cursor: pointer;"
+                            onclick="selectTheme('theme-dark')" title="Karanlık"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #00bcd4; cursor: pointer;"
+                            onclick="selectTheme('theme-ocean')" title="Okyanus"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #4caf50; cursor: pointer;"
+                            onclick="selectTheme('theme-forest')" title="Orman"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #ff9800; cursor: pointer;"
+                            onclick="selectTheme('theme-sunset')" title="Gün Batımı"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #1a237e; cursor: pointer;"
+                            onclick="selectTheme('theme-space')" title="Uzay"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #e91e63; cursor: pointer;"
+                            onclick="selectTheme('theme-candy')" title="Şeker"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #ff5722; cursor: pointer;"
+                            onclick="selectTheme('theme-volcano')" title="Volkan"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #9c27b0; cursor: pointer;"
+                            onclick="selectTheme('theme-royal')" title="Kraliyet"></i>
+                        <i class="fas fa-circle fa-2x theme-icon" style="color: #ffc107; cursor: pointer;"
+                            onclick="selectTheme('theme-retro')" title="Retro"></i>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Tamam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="modal fade" id="leaderboardModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-trophy"></i> Haftanın Liderleri</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Kullanıcı</th>
+                                <th scope="col" class="text-end">Puan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div class="small fw-bold">Sıralaman: <span id="user-rank" class="text-primary">#99</span></div>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Playground Modal -->
+    <div class="modal fade" id="playgroundModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content h-100">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-code-branch"></i> Kodlama Bahçesi</h5>
+                    <div class="d-flex gap-2 ms-auto me-4">
+                        <select id="playground-lang-select" class="form-select form-select-sm" style="width: 150px;"
+                            onchange="changePlaygroundLanguage()">
+                            <option value="five">5. Sınıf</option>
+                            <option value="six">6. Sınıf</option>
+                            <option value="html" selected>HTML/CSS/JS</option>
+                            <option value="css">CSS</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="react">React</option>
+                            <option value="python">Python</option>
+                            <option value="git">Git</option>
+                        </select>
+                        <button class="btn btn-warning btn-sm fw-bold text-dark" onclick="loadRandomExample()">
+                            <i class="fas fa-dice"></i> Örnek Getir
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row h-100">
+                        <div class="col-md-6 d-flex flex-column">
+                            <label class="form-label fw-bold">HTML & JS Kodu:</label>
+                            <textarea id="playground-code" class="form-control flex-grow-1 font-monospace"
+                                style="background:#282c34; color:#abb2bf; resize:none;"><h1>Merhaba Dünya!</h1>
+<script>
+    console.log("Bahçeme hoşgeldin!");
+    document.body.style.backgroundColor = "#f0f0f0";
+</script></textarea>
+                            <button class="btn btn-success mt-2" onclick="runPlayground()"><i class="fas fa-play"></i>
+                                Çalıştır</button>
+                            <button class="btn btn-outline-warning mt-2" onclick="savePlaygroundProject()"><i
+                                    class="fas fa-save"></i>
+                                Projeyi Kaydet</button>
+                            <button class="btn btn-outline-light mt-2" onclick="openProjectsModal()"><i
+                                    class="fas fa-folder-open"></i>
+                                Projelerim</button>
+                        </div>
+                        <div class="col-md-6 d-flex flex-column">
+                            <label class="form-label fw-bold">Çıktı:</label>
+                            <iframe id="playground-preview" class="border rounded w-100 flex-grow-1 bg-white"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glossary Modal -->
+    <div class="modal fade" id="glossaryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-book"></i> Yazılımcı Sözlüğü</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="glossary-search" class="form-control mb-3"
+                        placeholder="Terim ara... (Örn: Array)">
+                    <div class="list-group" id="glossary-list">
+                        <!-- Dynamic Terms -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hacker Typer Game Modal -->
+    <div class="modal fade" id="gameModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-success border-success">
+                <div class="modal-header border-success">
+                    <h5 class="modal-title font-monospace"><i class="fas fa-terminal"></i> HACKER_TYPER_V1.0</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body position-relative p-0" style="height: 400px; overflow: hidden;" id="game-area">
+                    <div class="position-absolute top-50 start-50 translate-middle text-center" id="game-start-overlay">
+                        <button class="btn btn-outline-success btn-lg font-monospace"
+                            onclick="startGame()">BAŞLAT</button>
+                    </div>
+                    <div id="game-words-container"></div>
+                    <div class="position-absolute bottom-0 w-100 p-3 bg-black border-top border-success">
+                        <input type="text" id="game-input"
+                            class="form-control bg-black text-success border-success font-monospace"
+                            placeholder="Komutu Yaz..." autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer border-success justify-content-between">
+                    <div class="font-monospace">SKOR: <span id="game-score">0</span></div>
+                    <div class="font-monospace text-danger" id="game-timer">SÜRE: 60s</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar/Certificate Modal -->
+    <div class="modal fade" id="certificateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-award"></i> Başarı Sertifikası</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Sertifika Tasarımı Seç:</label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary active"
+                                onclick="setCertStyle('classic', this)">Klasik</button>
+                            <button type="button" class="btn btn-outline-warning"
+                                onclick="setCertStyle('gold', this)">Altın</button>
+                            <button type="button" class="btn btn-outline-dark"
+                                onclick="setCertStyle('dark', this)">Modern</button>
+                        </div>
+                    </div>
+                    <div id="certificate-preview-container" class="shadow-lg mx-auto"
+                        style="max-width: 100%; overflow: auto;">
+                        <canvas id="certificate-canvas" width="800" height="600"
+                            style="width: 100%; height: auto; max-width: 800px;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-success btn-lg" onclick="downloadCertificate()"><i
+                            class="fas fa-download"></i> İndir (PNG)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Profile Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Profili Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Adın:</label>
+                        <input type="text" id="edit-username" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Avatar Değiştir:</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="edit-avatar-preview" class="fs-1">👨‍💻</div>
+                            <div class="d-flex flex-column gap-2">
+                                <button class="btn btn-outline-secondary btn-sm"
+                                    onclick="document.getElementById('edit-avatar-input').click()">📸 Fotoğraf
+                                    Yükle</button>
+                                <input type="file" id="edit-avatar-input" hidden accept="image/*">
+                                <small class="text-muted">veya emoji seç:</small>
+                                <div class="d-flex gap-1" id="edit-emoji-list">
+                                    <button class="btn btn-sm btn-light border"
+                                        onclick="setEditAvatar('👨‍💻')">👨‍💻</button>
+                                    <button class="btn btn-sm btn-light border"
+                                        onclick="setEditAvatar('👩‍💻')">👩‍💻</button>
+                                    <button class="btn btn-sm btn-light border"
+                                        onclick="setEditAvatar('🚀')">🚀</button>
+                                    <button class="btn btn-sm btn-light border"
+                                        onclick="setEditAvatar('🐱')">🐱</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfileChanges()">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toast-title">Bildirim</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+                Mesaj içeriği.
+            </div>
+        </div>
+    </div>
+
+    <!-- Mentor Robot FAB & Modal -->
+    <div class="position-fixed bottom-0 end-0 m-4" style="z-index: 1050;">
+        <button class="btn btn-primary rounded-circle shadow-lg p-3" style="width: 60px; height: 60px;"
+            data-bs-toggle="modal" data-bs-target="#mentorModal">
+            <i class="fas fa-robot fs-2"></i>
+        </button>
+    </div>
+
+    <!-- Mentor Modal -->
+    <div class="modal fade" id="mentorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-robot"></i> Mentor AI</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="height: 400px; overflow-y: auto;" id="mentor-chat-area">
+                    <div class="d-flex mb-3">
+                        <div class="bg-light p-2 rounded start-0 border" style="max-width: 80%;">
+                            Merhaba! Ben Mentor. Kodlama ile ilgili takıldığın yerleri bana sorabilirsin.
+                        </div>
+                    </div>
+                    <!-- Chat messages -->
+                </div>
+                <div class="modal-footer">
+                    <div class="input-group">
+                        <input type="text" id="mentor-input" class="form-control"
+                            placeholder="Bir şeyler sor... (örn: Döngü nedir?)">
+                        <button class="btn btn-primary" onclick="askMentor()"><i
+                                class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Projects Modal -->
+    <div class="modal fade" id="projectsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📂 Projelerim</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group" id="saved-projects-list">
+                        <!-- Projects -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXAM MODAL (Full Screen) -->
+    <div class="modal fade" id="examModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title font-monospace"><i class="fas fa-laptop-code text-warning"></i> <span
+                            id="exam-subject-title">HTML</span> UYGULAMA SINAVI</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-danger fs-6" id="exam-timer">Süre: 20:00</span>
+                        <div class="badge bg-light text-dark fs-6">Soru: <span id="exam-q-num">1</span>/20</div>
+                    </div>
+                </div>
+                <div class="modal-body bg-light d-flex flex-column p-0">
+                    <!-- Progress Bar -->
+                    <div class="progress" style="height: 5px;">
+                        <div id="exam-progress" class="progress-bar bg-warning" style="width: 0%"></div>
+                    </div>
+
+                    <div class="container-fluid flex-grow-1 d-flex gap-3 p-3" style="overflow: hidden;">
+                        <!-- Left: Question & Context -->
+                        <div class="card border-0 shadow-sm col-md-4 h-100 overflow-auto">
+                            <div class="card-body">
+                                <h5 class="fw-bold mb-3" id="exam-q-title">Soru Başlığı</h5>
+                                <p class="lead" id="exam-q-text">Soru metni buraya gelecek.</p>
+                                <hr>
+                                <div class="alert alert-info small">
+                                    <i class="fas fa-info-circle"></i> Görevi tamamlamak için sağdaki alanı kullan.
+                                </div>
+                                <div class="mt-auto">
+                                    <button class="btn btn-outline-warning w-100 mb-2" id="exam-hint-btn"
+                                        onclick="useExamHint()">
+                                        <i class="far fa-lightbulb"></i> İpucu Al (-10 Puan)
+                                    </button>
+                                    <div id="exam-hint-area" class="alert alert-warning small d-none"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Interaction Area -->
+                        <div class="card border-0 shadow-sm col-md-8 h-100 d-flex flex-column">
+                            <div
+                                class="card-header bg-secondary text-white small font-monospace d-flex justify-content-between">
+                                <span><i class="fas fa-code"></i> ÇALIŞMA ALANI</span>
+                                <span class="badge bg-dark" id="exam-type-badge">HATA DÜZELTME</span>
+                            </div>
+
+                            <!-- Interaction Containers -->
+                            <div class="card-body p-0 flex-grow-1 position-relative bg-dark" id="exam-workspace">
+                                <!-- TYPE: FIX (Code Editor) -->
+                                <textarea id="exam-fix-editor"
+                                    class="form-control font-monospace border-0 h-100 p-3 d-none"
+                                    style="background:#282c34; color:#abb2bf; resize:none; font-size:14px;"></textarea>
+
+                                <!-- TYPE: FILL (Inputs) -->
+                                <div id="exam-fill-area" class="d-none h-100 p-4 font-monospace text-white"
+                                    style="background:#282c34; overflow:auto;">
+                                    <!-- Dynamic content -->
+                                </div>
+
+                                <!-- TYPE: SORT (Drag/Click) -->
+                                <div id="exam-sort-area" class="d-none h-100 p-4 bg-light overflow-auto">
+                                    <p class="text-muted small">Satırları doğru sıraya dizmek için tıkla:</p>
+                                    <div id="sort-source" class="list-group mb-3"></div>
+                                    <hr>
+                                    <p class="fw-bold text-success">Senin Sıralaman:</p>
+                                    <div id="sort-target" class="list-group"
+                                        style="min-height:100px; border:2px dashed #ccc;"></div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer bg-white p-3 d-flex justify-content-between align-items-center">
+                                <div id="exam-feedback" class="fw-bold text-muted"></div>
+                                <button class="btn btn-primary btn-lg px-4" id="exam-submit-btn"
+                                    onclick="submitExamAnswer()">
+                                    Kontrol Et & İlerle <i class="fas fa-chevron-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXAM RESULT MODAL -->
+    <div class="modal fade" id="examResultModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Sınav Sonucu</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        onclick="closeExam()"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="py-4">
+                        <i id="result-icon" class="fas fa-trophy fa-4x text-warning mb-3"></i>
+                        <h2 class="fw-bold" id="result-score-title">Tebrikler!</h2>
+                        <p class="lead">Puanın: <span id="result-score" class="fw-bold text-primary display-4">85</span>
+                        </p>
+                        <div class="row justify-content-center mt-4 text-start" id="result-details">
+                            <!-- Details injected here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal"
+                        onclick="closeExam()">Tamamla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MARKET MODAL -->
+    <div class="modal fade" id="marketModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning text-dark border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-store me-2"></i>Puan Mağazası</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold mb-0">Hoş Geldin!</h4>
+                        <div class="bg-white px-3 py-2 rounded-pill shadow-sm border border-warning">
+                            <span class="text-muted small me-2">Bakiyen:</span>
+                            <span class="fw-bold text-warning fs-5"><i class="fas fa-coins me-1"></i> <span
+                                    id="market-user-points">0</span></span>
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-pills mb-3" id="marketTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#market-avatars">🦸
+                                Avatarlar</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#market-titles">🏷️
+                                Unvanlar</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Avatars Tab -->
+                        <div class="tab-pane fade show active" id="market-avatars">
+                            <div class="row g-3" id="market-avatars-list">
+                                <!-- JS will populate -->
+                                <div class="text-center py-5">
+                                    <div class="spinner-border text-warning"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Titles Tab -->
+                        <div class="tab-pane fade" id="market-titles">
+                            <div class="list-group" id="market-titles-list">
+                                <!-- JS will populate -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DAILY CHALLENGE MODAL -->
+    <div class="modal fade" id="challengeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-fire me-2"></i>Günlük Meydan Okuma</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div id="challenge-start-view">
+                        <i class="fas fa-dumbbell fa-4x text-danger mb-3"></i>
+                        <h4 class="fw-bold">Günün Sorusu Hazır!</h4>
+                        <p class="text-muted">Bu zor soruyu çöz ve <strong>+50 Puan</strong> kazan. Yanlış yaparsan
+                            şansını kaybedersin!</p>
+                        <button class="btn btn-danger btn-lg rounded-pill px-5 shadow-sm"
+                            onclick="startDailyChallenge()">
+                            Başla <i class="fas fa-play ms-2"></i>
+                        </button>
+                    </div>
+
+                    <div id="challenge-quiz-view" class="d-none text-start">
+                        <div class="badge bg-danger mb-3">ZOR SEVİYE</div>
+                        <p id="challenge-question-text" class="lead fw-bold mb-4">Soru yükleniyor...</p>
+                        <div id="challenge-options" class="d-grid gap-2"></div>
+                    </div>
+
+                    <div id="challenge-result-view" class="d-none">
+                        <div id="challenge-result-icon"></div>
+                        <h3 id="challenge-result-title" class="fw-bold mt-3"></h3>
+                        <p id="challenge-result-msg" class="text-muted"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & Highlight JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
