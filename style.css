@@ -191,3 +191,174 @@ body.theme-retro #sidebar {
     background-color: #2a9d8f !important;
     color: #fff !important;
 }
+
+/* ================= PRINT STYLES ================= */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #certificate-print-area,
+    #certificate-print-area *,
+    #karne-print-area,
+    #karne-print-area * {
+        visibility: visible;
+    }
+
+    #certificate-print-area,
+    #karne-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Hide modals backdrop */
+    .modal-backdrop {
+        display: none !important;
+    }
+
+    /* Force background colors to print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+/* ================= MEMORY GAME STYLES ================= */
+.memory-card {
+    width: 120px;
+    height: 120px;
+    perspective: 1000px;
+    cursor: pointer;
+}
+
+.memory-card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.memory-card.flipped .memory-card-inner {
+    transform: rotateY(180deg);
+}
+
+.memory-card-front,
+.memory-card-back {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.memory-card-front {
+    background: linear-gradient(135deg, #6c757d, #343a40);
+    color: white;
+    font-size: 2rem;
+}
+
+.memory-card-back {
+    background-color: white;
+    color: #212529;
+    transform: rotateY(180deg);
+    border: 3px solid #0d6efd;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-align: center;
+    overflow: hidden;
+}
+
+.memory-card.matched .memory-card-inner {
+    transform: rotateY(180deg) scale(0.95);
+    opacity: 0.8;
+}
+
+.memory-card.matched .memory-card-back {
+    border-color: #198754;
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+@media (max-width: 576px) {
+    .memory-card {
+        width: 80px;
+        height: 80px;
+    }
+
+    .memory-card-back {
+        font-size: 0.7rem;
+        padding: 5px;
+    }
+}
+
+/* ================= ASSISTANT (Kodi) STYLES ================= */
+#assistant-widget {
+    z-index: 1050;
+    /* Above most things, below modals */
+}
+
+#assistant-widget.active {
+    transform: translateY(0) !important;
+}
+
+.assistant-bubble {
+    border-bottom-right-radius: 0 !important;
+    animation: floatBubble 3s ease-in-out infinite;
+}
+
+.assistant-avatar {
+    animation: floatAvatar 4s ease-in-out infinite;
+    transition: transform 0.2s;
+}
+
+.assistant-avatar:hover {
+    transform: scale(1.1);
+}
+
+.assistant-avatar.talking .assistant-icon {
+    animation: bounceIcon 0.5s infinite alternate;
+}
+
+@keyframes floatBubble {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes floatAvatar {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes bounceIcon {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-3px) scale(1.05);
+    }
+}

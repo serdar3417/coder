@@ -4735,3 +4735,98 @@ function Counter() {
         }
     ]
 };
+
+// --- YEPYENİ: KONUYA ÖZEL AKILLI SINAV OLUŞTURUCU (5. ve 6. SINIFLAR) ---
+(function () {
+    const stripHtml = (html) => {
+        let tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    };
+
+    ['five', 'six'].forEach(grade => {
+        if (!lessonData[grade]) return;
+
+        lessonData[grade].forEach((lesson, index) => {
+            let weekNum = index + 1;
+            let questions = [];
+            let currentQ = 1;
+
+            let studyQ = lesson.studyQuestions || [];
+            let theoryText = stripHtml(lesson.theory || "");
+            let sentences = theoryText.split(/(?<=[.!?])\s+/)
+                .map(s => s.trim())
+                .filter(s => s.length > 15 && s.indexOf('?') === -1);
+
+            // Eğer yeterli cümle kalmazsa sahte cümleler ekle (hata fırlatmaması için)
+            if (sentences.length < 10) {
+                let defaultWords = [lesson.title, "Teknoloji", "Kodlama", "İnternet", "Veri", "Bilgi", "Yazılım", "Donanım", "Problemler", "Çözümler"];
+                for (let k = 0; k < 10; k++) {
+                    sentences.push(lesson.title + " konusunda " + defaultWords[k] + " kısmı çok önemlidir.");
+                }
+            }
+
+            // 5 ADET BOŞLUK DOLDURMA SORUSU
+            for (let i = 0; i < 5; i++) {
+                let fillSentence = "";
+                let rawKeyWord = "bilgi";
+                let hintTxt = "Ders içeriğinden hatırlayın.";
+
+                if (studyQ[i]) {
+                    fillSentence = studyQ[i].answer;
+                    hintTxt = studyQ[i].question; // Çalışma sorusunu ipucu olarak kullanıyoruz!
+                    let words = fillSentence.split(" ").filter(w => w.length > 3 && !w.includes('bir') && !w.includes('için') && !w.includes('göre'));
+                    rawKeyWord = words[Math.floor(words.length / 2)] || words[0] || "bilgi";
+                } else {
+                    fillSentence = sentences[i];
+                    let words = fillSentence.split(" ").filter(w => w.length > 4);
+                    rawKeyWord = words[Math.floor(words.length / 2)] || words[0] || "kavram";
+                    hintTxt = "Konu metninde geçen bir cümle.";
+                }
+
+                let keyWord = rawKeyWord.replace(/[.,'"]/g, "").toLowerCase();
+                let maskedSentence = fillSentence.replace(rawKeyWord, "_____");
+
+                questions.push({
+                    id: `${grade}_w${weekNum}_autoF_${i}`,
+                    type: 'fill',
+                    title: `Soru ${currentQ++} (Boşluk Doldurma) - ${lesson.title}`,
+                    text: `Dersimizdeki şu cümleyi doğru kelimeyle tamamlayınız:\n\n"${maskedSentence}"`,
+                    code: "Eksik Kelime: {{input}}",
+                    answers: [keyWord, keyWord.toUpperCase(), keyWord.charAt(0).toUpperCase() + keyWord.slice(1)],
+                    hint1: "İpucu Soru:", hint2: hintTxt
+                });
+            }
+
+            // 5 ADET AÇIK UÇLU YORUM SORUSU
+            for (let i = 0; i < 5; i++) {
+                let openQ = "";
+                let expectedAns = "";
+
+                if (studyQ[i]) {
+                    openQ = studyQ[i].question;
+                    expectedAns = studyQ[i].answer;
+                } else {
+                    let s = sentences[i + 5] || sentences[i] || lesson.title;
+                    openQ = `Dersimizde geçen şu ifadenin ne anlama geldiğini kendi cümlelerinizle açıklayınız:\n"${s}"`;
+                    expectedAns = "Bu konunun temel mantığıdır.";
+                }
+
+                let keys = expectedAns.split(" ").filter(w => w.length > 4).map(w => w.replace(/[.,'"]/g, "").toLowerCase());
+
+                questions.push({
+                    id: `${grade}_w${weekNum}_autoO_${i}`,
+                    type: 'open',
+                    title: `Soru ${currentQ++} (Açık Uçlu) - ${lesson.title}`,
+                    text: openQ,
+                    code: "",
+                    answers: keys.length > 0 ? keys : ["konu", "kavram", "önemli", "doğru", "bilgi", "mantık"],
+                    correct: expectedAns,
+                    hint1: "Nasıl çözerim?", hint2: "Ders notlarını hatırlayarak kendi cümlelerinizi kurun."
+                });
+            }
+
+            lesson.weeklyExam = questions;
+        });
+    });
+})();

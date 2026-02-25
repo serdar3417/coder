@@ -139,12 +139,32 @@ function applyTheme(themeName) {
 
         // Highlight active
         // Use onclick attribute to match since classList parsing is complex with sub-classes
-        if (i.getAttribute('onclick').includes(themeName)) {
+        if (i.getAttribute('onclick') && i.getAttribute('onclick').includes(themeName)) {
             i.style.transform = "scale(1.3)";
             i.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
         }
     });
+
+    // Update navbar icon based on theme
+    const darkModeIcon = document.querySelector('#dark-mode-btn i');
+    if (darkModeIcon) {
+        if (themeName === 'theme-dark') {
+            darkModeIcon.className = 'fas fa-sun text-warning';
+        } else {
+            darkModeIcon.className = 'fas fa-moon';
+        }
+    }
 }
+
+// Quick Dark Mode Toggle
+function toggleDarkMode() {
+    if (currentTheme === 'theme-dark') {
+        selectTheme('theme-default');
+    } else {
+        selectTheme('theme-dark');
+    }
+}
+
 
 // ================= FONT SIZE SYSTEM =================
 let currentFontSize = 16;
@@ -1178,7 +1198,71 @@ function loadLesson(subjectKey, lessonId) {
 
     document.getElementById('lesson-title').textContent = foundLesson.title;
     document.getElementById('lesson-theory').innerHTML = foundLesson.theory;
+
+    // --- INTERACTIVE STUDY QUESTIONS ---
+    if (foundLesson.studyQuestions && foundLesson.studyQuestions.length > 0) {
+        let studyHtml = `
+            <div class="alert alert-light border shadow-sm mt-4 p-4 rounded-4" style="background: rgba(255,255,255,0.7); backdrop-filter: blur(5px);">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle">
+                        <i class="fas fa-pencil-alt text-primary fa-lg"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">💪 Bilgini Test Et! (Defterine Yaz)</h5>
+                </div>
+                <div class="accordion accordion-flush" id="studyAccordion">
+        `;
+
+        foundLesson.studyQuestions.forEach((sq, idx) => {
+            studyHtml += `
+                <div class="accordion-item bg-transparent border-0 mb-3 shadow-sm rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#studyCollapse${idx}">
+                            ${idx + 1}. ${sq.question}
+                        </button>
+                    </h2>
+                    <div id="studyCollapse${idx}" class="accordion-collapse collapse" data-bs-parent="#studyAccordion">
+                        <div class="accordion-body bg-white bg-opacity-50">
+                            <div class="input-group mb-2">
+                                <input type="text" id="study-input-${idx}" class="form-control" placeholder="Cevabını buraya yaz...">
+                                <button class="btn btn-primary" onclick="checkStudyAnswer(${idx})">Kontrol Et</button>
+                            </div>
+                            <div id="study-feedback-${idx}" class="mt-2 small"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-info" onclick="toggleStudyHint(${idx})">
+                                    <i class="fas fa-lightbulb"></i> İpucu
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="showStudySolution(${idx})">
+                                    <i class="fas fa-check-double"></i> Doğru Cevabı Gör
+                                </button>
+                            </div>
+                            <div id="study-hint-${idx}" class="mt-2 p-2 bg-info bg-opacity-10 rounded border-start border-info d-none small text-muted">
+                                <strong>💡 İpucu:</strong> ${sq.hint}
+                            </div>
+                            <div id="study-solution-${idx}" class="mt-2 p-2 bg-success bg-opacity-10 rounded border-start border-success d-none small">
+                                <strong>✅ Doğru Cevap:</strong> ${sq.answer}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        studyHtml += `</div></div>`;
+        document.getElementById('lesson-theory').innerHTML += studyHtml;
+    }
+
     document.getElementById('lesson-tip').textContent = foundLesson.tips || "";
+
+    // Weekly Exam Logic
+    const weeklyExamContainer = document.getElementById('weekly-exam-container');
+    if (weeklyExamContainer) {
+        if (foundLesson.weeklyExam && foundLesson.weeklyExam.length > 0) {
+            weeklyExamContainer.classList.remove('d-none');
+            weeklyExamContainer.innerHTML = `<button class="btn btn-primary w-100 fw-bold shadow-sm py-2" onclick="startWeeklyExam('${subjectKey}', ${foundLesson.id})"><i class="fas fa-star text-warning"></i> Konu Sonu Sınavı (Açık Uçlu ve Boşluk Doldurma)</button>`;
+        } else {
+            weeklyExamContainer.classList.add('d-none');
+        }
+    }
 
     // Quiz Setup
     const editor = document.getElementById('code-editor');
@@ -1288,6 +1372,47 @@ function completeLesson(lesson, pointsEarned) {
     }
 }
 
+
+// ================= INTERACTIVE STUDY LOGIC =================
+function checkStudyAnswer(idx) {
+    if (!activeLesson || !activeLesson.studyQuestions) return;
+    const sq = activeLesson.studyQuestions[idx];
+    const input = document.getElementById(`study-input-${idx}`).value.trim().toLowerCase();
+    const feedback = document.getElementById(`study-feedback-${idx}`);
+
+    // Simple word match (check if parts of the answer are in input or vice versa)
+    const keywords = sq.answer.toLowerCase().split(' ').filter(w => w.length > 3);
+    let match = false;
+
+    if (input === sq.answer.toLowerCase()) {
+        match = true;
+    } else {
+        // Check if input contains at least one significant keyword
+        keywords.forEach(k => {
+            if (input.includes(k)) match = true;
+        });
+    }
+
+    if (match) {
+        playSound('success');
+        feedback.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Harika! Doğru yaklaştın.</span>`;
+        showStudySolution(idx);
+    } else {
+        playSound('error');
+        feedback.innerHTML = `<span class="text-danger small"><i class="fas fa-times-circle"></i> Biraz daha düşünmelisin.</span>`;
+    }
+}
+
+function toggleStudyHint(idx) {
+    const hint = document.getElementById(`study-hint-${idx}`);
+    hint.classList.toggle('d-none');
+}
+
+function showStudySolution(idx) {
+    const solution = document.getElementById(`study-solution-${idx}`);
+    solution.classList.remove('d-none');
+}
+
 // Helper
 function showToast(msg, type) {
     document.getElementById('toast-message').textContent = msg;
@@ -1322,6 +1447,33 @@ function openExam(subject) {
 
     // Update UI Titles
     document.getElementById('exam-subject-title').textContent = subject.toUpperCase();
+
+    // Show Modal
+    const modal = new bootstrap.Modal(document.getElementById('examModal'));
+    modal.show();
+
+    // Start Timer
+    startExamTimer();
+
+    // Load First Question
+    loadExamQuestion(0);
+}
+
+function startWeeklyExam(subjectKey, lessonId) {
+    const lessons = lessonData[subjectKey];
+    const foundLesson = lessons.find(l => l.id === lessonId);
+
+    if (!foundLesson || !foundLesson.weeklyExam) return;
+
+    currentExamSubject = subjectKey + '_week_' + lessonId;
+    currentExam = foundLesson.weeklyExam;
+    examCurrentIndex = 0;
+    examScore = 0;
+    examUserAnswers = new Array(currentExam.length).fill(null);
+    examTimeRemaining = 20 * 60; // 20 minutes for 10 questions
+
+    // Update UI Titles
+    document.getElementById('exam-subject-title').textContent = foundLesson.title.toUpperCase() + " SINAVI";
 
     // Show Modal
     const modal = new bootstrap.Modal(document.getElementById('examModal'));
@@ -1378,12 +1530,14 @@ function loadExamQuestion(index) {
     const fixEditor = document.getElementById('exam-fix-editor');
     const fillArea = document.getElementById('exam-fill-area');
     const sortArea = document.getElementById('exam-sort-area');
+    const openArea = document.getElementById('exam-open-area');
     const badge = document.getElementById('exam-type-badge');
 
     // Hide all
     fixEditor.classList.add('d-none');
     fillArea.classList.add('d-none');
     sortArea.classList.add('d-none');
+    if (openArea) openArea.classList.add('d-none');
 
     if (q.type === 'fix') {
         badge.textContent = "HATA DÜZELTME";
@@ -1426,6 +1580,14 @@ function loadExamQuestion(index) {
             };
             source.appendChild(div);
         });
+    }
+    else if (q.type === 'open') {
+        badge.textContent = "AÇIK UÇLU SORU";
+        badge.className = "badge bg-success";
+        if (openArea) {
+            openArea.classList.remove('d-none');
+            document.getElementById('exam-open-input').value = ""; // clear input
+        }
     }
 }
 
@@ -1470,6 +1632,16 @@ function submitExamAnswer() {
         });
         isCorrect = allCorrect;
         userResponse = diffs;
+    }
+    else if (q.type === 'open') {
+        const userCode = document.getElementById('exam-open-input').value.trim().toLowerCase();
+        let match = false;
+        // Check if any of the accepted keywords exist
+        if (q.answers && q.answers.some(ans => userCode.includes(ans.toLowerCase()))) {
+            match = true;
+        }
+        isCorrect = match;
+        userResponse = document.getElementById('exam-open-input').value; // Keep original case
     }
     else if (q.type === 'sort') {
         const target = document.getElementById('sort-target');
@@ -1541,25 +1713,72 @@ function finishExam(timeout = false) {
         icon.className = "fas fa-book-reader fa-4x text-danger mb-3";
     }
 
+    // Save Summary Statistics to LocalStorage for Karne
+    let correctCount = 0;
+    let wrongCount = 0;
+
+    examUserAnswers.forEach(ans => {
+        if (!ans) return;
+        if (ans.isCorrect) correctCount++;
+        else wrongCount++;
+    });
+
+    // Create or update stats
+    let userStats = JSON.parse(localStorage.getItem('codingApp_stats')) || { totalExams: 0, totalCorrect: 0, totalWrong: 0, history: [] };
+
+    // Only save if exam was actually taken (has answers)
+    if (correctCount > 0 || wrongCount > 0) {
+        userStats.totalExams++;
+        userStats.totalCorrect += correctCount;
+        userStats.totalWrong += wrongCount;
+
+        userStats.history.push({
+            date: new Date().toLocaleDateString(),
+            subject: currentExamSubject,
+            score: Math.round((correctCount / (correctCount + wrongCount)) * 100),
+            correct: correctCount,
+            wrong: wrongCount
+        });
+
+        localStorage.setItem('codingApp_stats', JSON.stringify(userStats));
+    }
+
     // Render Details
     const details = document.getElementById('result-details');
     details.innerHTML = '';
 
     examUserAnswers.forEach((ans, i) => {
         if (!ans) return; // skipped?
+
         const q = currentExam[i];
+        let correctDisplay = q.correct || q.answers || q.order;
+        if (Array.isArray(correctDisplay)) {
+            correctDisplay = correctDisplay.join(', ');
+        }
+
         details.innerHTML += `
             <div class="col-12 mb-2">
                 <div class="p-3 border rounded ${ans.isCorrect ? 'bg-success bg-opacity-10 border-success' : 'bg-danger bg-opacity-10 border-danger'}">
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between mb-2">
                         <strong>Soru ${i + 1}: ${q.title}</strong>
-                        <span class="badge ${ans.isCorrect ? 'bg-success' : 'bg-danger'}">${ans.score} Puan</span>
+                        <span class="badge ${ans.isCorrect ? 'bg-success' : 'bg-danger'}">${ans.isCorrect ? 'Doğru' : 'Yanlış'}</span>
                     </div>
-                    ${!ans.isCorrect ? `<div class="mt-2 small text-muted">Doğru Cevap: ${q.correct || q.answers || q.order}</div>` : ''}
+                    <p class="small text-muted mb-1">${q.text}</p>
+                    ${!ans.isCorrect ? `
+                        <div class="mt-2 small text-danger"><i class="fas fa-times"></i> Senin Cevabın: <strong>${ans.userResponse ? (Array.isArray(ans.userResponse) ? ans.userResponse.join(', ') : ans.userResponse) : 'Boş Bırakıldı'}</strong></div>
+                        <div class="mt-1 small text-success"><i class="fas fa-check"></i> Doğru Cevap: <strong>${correctDisplay}</strong></div>
+                    ` : `
+                        <div class="mt-2 small text-success"><i class="fas fa-check"></i> Senin Cevabın: <strong>${ans.userResponse ? (Array.isArray(ans.userResponse) ? ans.userResponse.join(', ') : ans.userResponse) : 'Doğru'}</strong></div>
+                    `}
                 </div>
             </div>
         `;
     });
+
+    const correctCountEl = document.getElementById('result-correct-count');
+    const wrongCountEl = document.getElementById('result-wrong-count');
+    if (correctCountEl) correctCountEl.textContent = correctCount;
+    if (wrongCountEl) wrongCountEl.textContent = wrongCount;
 
     resultModal.show();
 }
@@ -1945,3 +2164,339 @@ function checkChallengeAnswer(selected, correct) {
         playSound('error');
     }
 }
+
+// ================= KARNE (STUDENT STATS) =================
+function openKarneModal() {
+    // 1. Get Stats from Storage
+    const userStats = JSON.parse(localStorage.getItem('codingApp_stats')) || { totalExams: 0, totalCorrect: 0, totalWrong: 0, history: [] };
+
+    // 2. Populate Header Numbers
+    document.getElementById('karne-total-exams').textContent = userStats.totalExams;
+    document.getElementById('karne-total-correct').textContent = userStats.totalCorrect;
+    document.getElementById('karne-total-wrong').textContent = userStats.totalWrong;
+
+    // 3. Populate History Table
+    const tbody = document.getElementById('karne-history-list');
+    tbody.innerHTML = '';
+
+    if (userStats.history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Henüz hiç sınava girmedin. Hadi hemen bir sınava başla!</td></tr>';
+    } else {
+        // Show newest first
+        const sortedHistory = [...userStats.history].reverse();
+
+        sortedHistory.forEach(exam => {
+            let badgeClass = exam.score >= 80 ? 'bg-success' : (exam.score >= 50 ? 'bg-warning text-dark' : 'bg-danger');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><span class="small text-muted">${exam.date}</span></td>
+                    <td class="fw-bold">${exam.subject}</td>
+                    <td class="text-center">
+                        <span class="text-success fw-bold me-2"><i class="fas fa-check"></i> ${exam.correct}</span> 
+                        <span class="text-danger fw-bold"><i class="fas fa-times"></i> ${exam.wrong}</span>
+                    </td>
+                    <td class="text-end">
+                        <span class="badge ${badgeClass} fs-6">%${exam.score}</span>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    // 4. Show Modal
+    const modal = new bootstrap.Modal(document.getElementById('karneModal'));
+    modal.show();
+}
+
+// ================= CERTIFICATE SYSTEM =================
+function checkCertificateEligibility() {
+    const userStats = JSON.parse(localStorage.getItem('codingApp_stats')) || { totalExams: 0, totalCorrect: 0, totalWrong: 0, history: [] };
+
+    // Define eligibility: At least 3 exams taken OR user points > 300
+    if (userStats.totalExams >= 3 || currentUser.points >= 300) {
+
+        // Populate certificate
+        document.getElementById('cert-student-name').textContent = currentUser.name.toUpperCase();
+
+        const today = new Date();
+        document.getElementById('cert-date').textContent = today.toLocaleDateString();
+
+        const modal = new bootstrap.Modal(document.getElementById('certificateModal'));
+        modal.show();
+
+        playSound('success');
+    } else {
+        showToast("Sertifika için henüz yeterince ilerlemedin. Biraz daha sınava gir veya puan kazan!", "warning");
+    }
+}
+
+function printCertificate() {
+    window.print();
+}
+
+// ================= MEMORY GAME (Kavram Peşinde) =================
+let mgCards = [];
+let mgFlippedCards = [];
+let mgMatchedPairs = 0;
+let mgMoves = 0;
+let mgTimerInterval = null;
+let mgSeconds = 0;
+let mgIsLocked = false;
+
+// Extract concepts from data.js (theory text & study questions)
+function getMemoryGameData() {
+    let concepts = [];
+
+    // Fallback static data if dynamic extraction fails or isn't enough
+    const defaultConcepts = [
+        { term: "Algoritma", desc: "Bir problemi çözmek için izlenen yolların tamamı." },
+        { term: "Değişken", desc: "İçinde farklı değerler tutabilen hafıza kutusu." },
+        { term: "Döngü", desc: "Bir işlemi belirli bir şarta bağlı olarak tekrarlayan yapı." },
+        { term: "Koşul", desc: "Eğer/Değilse mantığıyla kodun yönünü belirleyen yapı." },
+        { term: "Hata Ayıklama", desc: "Kod içerisindeki sorunları (bug) bulup düzeltme işlemi." },
+        { term: "Donanım", desc: "Bilgisayarın gözle görülebilen, elle tutulabilen kısımları." },
+        { term: "Yazılım", desc: "Bilgisayara ne yapması gerektiğini söyleyen komutlar." },
+        { term: "Siber Zorbalık", desc: "İnternet ortamında başkalarına rahatsızlık verme." }
+    ];
+
+    // Try to extract from first few lessons dynamically to make it relevant
+    try {
+        if (lessonData.five && lessonData.five.length > 0) {
+            lessonData.five.slice(0, 3).forEach(lesson => {
+                if (lesson.studyQuestions) {
+                    lesson.studyQuestions.slice(0, 2).forEach(sq => {
+                        // Very simple extraction: shortest word in question as term, rest as desc?
+                        // Or just use the defaults which are guaranteed good quality for a game
+                    });
+                }
+            });
+        }
+    } catch (e) { console.log(e); }
+
+    // Use default reliable concepts for the memory game
+    return defaultConcepts.slice(0, 6); // 6 pairs = 12 cards
+}
+
+function openMemoryGame() {
+    const modal = new bootstrap.Modal(document.getElementById('memoryGameModal'));
+
+    // Reset Views
+    document.getElementById('mg-start-view').classList.remove('d-none');
+    document.getElementById('mg-board-view').classList.add('d-none');
+    document.getElementById('mg-end-view').classList.add('d-none');
+
+    modal.show();
+}
+
+function startMemoryGame() {
+    // Show board, hide others
+    document.getElementById('mg-start-view').classList.add('d-none');
+    document.getElementById('mg-end-view').classList.add('d-none');
+    document.getElementById('mg-board-view').classList.remove('d-none');
+
+    // Reset variables
+    mgFlippedCards = [];
+    mgMatchedPairs = 0;
+    mgMoves = 0;
+    mgSeconds = 0;
+    mgIsLocked = false;
+    document.getElementById('mg-moves').textContent = "0";
+    document.getElementById('mg-timer').textContent = "00:00";
+
+    clearInterval(mgTimerInterval);
+    mgTimerInterval = setInterval(() => {
+        mgSeconds++;
+        let m = Math.floor(mgSeconds / 60).toString().padStart(2, '0');
+        let s = (mgSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('mg-timer').textContent = `${m}:${s}`;
+    }, 1000);
+
+    // Prepare grid
+    const grid = document.getElementById('mg-grid');
+    grid.innerHTML = '';
+
+    const conceptData = getMemoryGameData();
+    let cardsData = [];
+
+    // Create pairs (Term and Description)
+    conceptData.forEach((item, index) => {
+        cardsData.push({ id: index, type: 'term', text: item.term });
+        cardsData.push({ id: index, type: 'desc', text: item.desc });
+    });
+
+    // Shuffle array (Fisher-Yates)
+    for (let i = cardsData.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cardsData[i], cardsData[j]] = [cardsData[j], cardsData[i]];
+    }
+
+    // Render cards
+    cardsData.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'memory-card card border-0';
+        cardEl.dataset.id = card.id;
+        cardEl.dataset.type = card.type;
+
+        let displayClass = card.type === 'term' ? 'fs-5 text-primary' : 'small text-dark';
+
+        cardEl.innerHTML = `
+            <div class="memory-card-inner">
+                <div class="memory-card-front text-white rounded shadow-sm d-flex flex-column">
+                    <i class="fas fa-question-circle fa-2x mb-1 opacity-50"></i>
+                </div>
+                <div class="memory-card-back rounded shadow-sm d-flex align-items-center justify-content-center p-2">
+                    <span class="${displayClass}">${card.text}</span>
+                </div>
+            </div>
+        `;
+
+        cardEl.addEventListener('click', () => flipCard(cardEl));
+        grid.appendChild(cardEl);
+    });
+}
+
+function flipCard(card) {
+    if (mgIsLocked) return;
+    if (card === mgFlippedCards[0]) return; // clicking same card
+    if (card.classList.contains('matched')) return;
+
+    card.classList.add('flipped');
+    mgFlippedCards.push(card);
+    playSound('select');
+
+    if (mgFlippedCards.length === 2) {
+        mgMoves++;
+        document.getElementById('mg-moves').textContent = mgMoves;
+        checkMatch();
+    }
+}
+
+function checkMatch() {
+    mgIsLocked = true;
+    let isMatch = mgFlippedCards[0].dataset.id === mgFlippedCards[1].dataset.id;
+
+    if (isMatch) {
+        // It's a match!
+        playSound('success');
+        setTimeout(() => {
+            mgFlippedCards[0].classList.add('matched');
+            mgFlippedCards[1].classList.add('matched');
+            mgMatchedPairs++;
+            mgFlippedCards = [];
+            mgIsLocked = false;
+
+            // Check win condition
+            if (mgMatchedPairs === 6) { // 6 pairs
+                endMemoryGame();
+            }
+        }, 500);
+    } else {
+        // Not a match
+        setTimeout(() => {
+            mgFlippedCards[0].classList.remove('flipped');
+            mgFlippedCards[1].classList.remove('flipped');
+            mgFlippedCards = [];
+            mgIsLocked = false;
+            playSound('error');
+        }, 1200); // give time to read
+    }
+}
+
+function endMemoryGame() {
+    clearInterval(mgTimerInterval);
+    setTimeout(() => {
+        playSound('levelUp');
+        document.getElementById('mg-board-view').classList.add('d-none');
+        document.getElementById('mg-end-view').classList.remove('d-none');
+
+        document.getElementById('mg-final-moves').textContent = mgMoves;
+
+        // Calculate points (base 50, minus moves over minimum 6)
+        let earnedPoints = Math.max(10, 100 - (mgMoves - 6) * 5);
+        document.getElementById('mg-final-points').textContent = `+${earnedPoints}`;
+
+        // Give points
+        currentUser.points += earnedPoints;
+        saveUser();
+        updateUserProfile();
+    }, 800);
+}
+
+function resetMemoryGame() {
+    clearInterval(mgTimerInterval);
+}
+
+// ================= ASSISTANT (Kodi) =================
+let kodiTimeout = null;
+
+const kodiMessages = [
+    "Harika gidiyorsun! Öğrenmek sabır işidir.",
+    "Unutma: Hata yapmak kodlamanın en doğal parçasıdır. Geliştirir!",
+    "Biraz yoruldun mu? Belki de kısa bir Pomodoro molası vermenin vaktidir.",
+    "Biliyor muydun? İlk bilgisayar programcısı bir kadındı: Ada Lovelace!",
+    "Puanlarını Mağaza'da harcamayı unutma. Harika avatarlar seni bekliyor!",
+    "Zorlandığın anlarda İpucu almaktan çekinme.",
+    "Her yeni kod satırı, yeni bir süper güç demektir!"
+];
+
+function showAssistant(message = null, autoHide = true) {
+    const widget = document.getElementById('assistant-widget');
+    const msgEl = document.getElementById('assistant-message');
+    const avatar = document.querySelector('.assistant-avatar');
+
+    // Pick random message if none provided
+    if (!message) {
+        message = kodiMessages[Math.floor(Math.random() * kodiMessages.length)];
+    }
+
+    msgEl.innerHTML = message;
+    widget.classList.remove('d-none');
+
+    // Add talking animation
+    avatar.classList.add('talking');
+
+    // Play subtle sound
+    playSound('select');
+
+    // Slide up
+    setTimeout(() => {
+        widget.classList.add('active');
+    }, 50);
+
+    // Stop talking animation after a bit
+    setTimeout(() => {
+        avatar.classList.remove('talking');
+    }, 2000);
+
+    // Auto hide
+    if (kodiTimeout) clearTimeout(kodiTimeout);
+
+    if (autoHide) {
+        kodiTimeout = setTimeout(() => {
+            hideAssistant();
+        }, 8000);
+    }
+}
+
+function hideAssistant() {
+    const widget = document.getElementById('assistant-widget');
+    widget.classList.remove('active');
+
+    setTimeout(() => {
+        widget.classList.add('d-none');
+    }, 300); // match CSS transition
+}
+
+function pokeAssistant() {
+    // When user clicks Kodi, show a new random message
+    showAssistant(null, true);
+}
+
+// Show Kodi randomly every 3 to 10 minutes while studying
+setInterval(() => {
+    // Only show if user is likely engaged (has some points, not right at login)
+    if (currentUser && currentUser.points > 0 && Math.random() > 0.5) {
+        showAssistant();
+    }
+}, Math.floor(Math.random() * 420000) + 180000); // 3 to 10 minutes
